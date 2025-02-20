@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Clock } from 'lucide-react';
 import { useTimerStore } from '../store/useTimerStore';
 import { validateTimerForm } from '../utils/validation';
+import Button from './Button';
+import { Timer } from '../types/timer';
 
 interface AddTimerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  timer?: Timer;
 }
 
-export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose }) => {
+export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose, timer }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState(0);
@@ -20,8 +23,24 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
     minutes: false,
     seconds: false,
   });
+
+  useEffect(() => {
+      if (isOpen && timer) {
+        setTitle(timer.title);
+        setDescription(timer.description);
+        setHours(Math.floor(timer.duration / 3600));
+        setMinutes(Math.floor((timer.duration % 3600) / 60));
+        setSeconds(timer.duration % 60);
+        setTouched({
+          title: false,
+          hours: false,
+          minutes: false,
+          seconds: false,
+        });
+      }
+    }, [isOpen, timer]);
   
-  const { addTimer } = useTimerStore();
+  const { addTimer, editTimer } = useTimerStore();
 
   if (!isOpen) return null;
 
@@ -56,6 +75,24 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
     });
   };
 
+   const editSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!validateTimerForm({ title, description, hours, minutes, seconds })) {
+        return;
+      }
+  
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      
+      editTimer(timer.id, {
+        title: title.trim(),
+        description: description.trim(),
+        duration: totalSeconds,
+      });
+  
+      onClose();
+    };
+
   const handleClose = () => {
     onClose();
     setTouched({
@@ -85,7 +122,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={timer ? editSubmit : handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Title <span className="text-red-500">*</span>
@@ -100,7 +137,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
                 touched.title && !isTitleValid
                   ? 'border-red-500'
                   : 'border-gray-300'
-              }`}
+              } w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm`}
               placeholder="Enter timer title"
             />
             {touched.title && !isTitleValid && (
@@ -121,7 +158,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className=""
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               placeholder="Enter timer description (optional)"
             />
           </div>
@@ -140,7 +177,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
                   value={hours}
                   onChange={(e) => setHours(Math.min(23, parseInt(e.target.value) || 0))}
                   onBlur={() => setTouched({ ...touched, hours: true })}
-                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 "
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm "
                 />
               </div>
               <div>
@@ -152,7 +189,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
                   value={minutes}
                   onChange={(e) => setMinutes(Math.min(59, parseInt(e.target.value) || 0))}
                   onBlur={() => setTouched({ ...touched, minutes: true })}
-                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2"
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
                 />
               </div>
               <div>
@@ -176,24 +213,19 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({ isOpen, onClose })
           </div>
           
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
-                isTitleValid && isTimeValid
-                  ? 'bg-blue-600 hover:bg-blue-700'
-                  : 'bg-blue-400 cursor-not-allowed'
-              }`}
-              disabled={!isTitleValid || !isTimeValid}
-            >
-              Add Timer
-            </button>
+            
+            <Button
+            type='button'
+            variant="secondary"
+            onClick={handleClose}>Cancel</Button>
+            <Button
+            type="submit"
+            variant="primary"
+            onClick={() => handleSubmit}
+          >
+            Add Timer
+          </Button>
+            
           </div>
         </form>
       </div>

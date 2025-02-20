@@ -8,6 +8,7 @@ import { EditTimerModal } from './EditTimerModal';
 import { TimerAudio } from '../utils/audio';
 import { TimerControls } from './TimerControls';
 import { TimerProgress } from './TimerProgress';
+import { AddTimerModal } from './AddTimerModal';
 
 interface TimerItemProps {
   timer: Timer;
@@ -28,12 +29,17 @@ export const TimerItem: React.FC<TimerItemProps> = ({ timer }) => {
         if (timer.remainingTime <= 1 && !hasEndedRef.current) {
           hasEndedRef.current = true;
           timerAudio.play().catch(console.error);
-          
+          const isMobile = window.innerWidth < 768;
           toast.success(`Timer "${timer.title}" has ended!`, {
-            duration: 5000,
+            duration: 50000,
+            className: isMobile ? "w-full bottom-0" : "max-w-sm",
+            position: isMobile ? "bottom-center" : "top-right",
+            style: {
+              margin: "10px 10px 0 10px"
+            },
             action: {
               label: 'Dismiss',
-              onClick: timerAudio.stop,
+              onClick: () => timerAudio.stop(),
             },
           });
         }
@@ -54,6 +60,7 @@ export const TimerItem: React.FC<TimerItemProps> = ({ timer }) => {
   };
 
   const handleToggle = () => {
+    console.log("timer", timer.remainingTime)
     if (timer.remainingTime <= 0) {
       hasEndedRef.current = false;
     }
@@ -125,7 +132,7 @@ export const TimerItem: React.FC<TimerItemProps> = ({ timer }) => {
         </div>
       </div>
 
-      <EditTimerModal
+      <AddTimerModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         timer={timer}

@@ -26,35 +26,27 @@ export class TimerAudio {
   async play(): Promise<void> {
     try {
       await this.initializeAudioContext();
-      
+  
       if (!this.audioContext) {
         throw new Error('AudioContext not initialized');
       }
-
-      // Create and configure oscillator
+  
+      // prevent creating another one
+      if (this.oscillator) {
+        return;
+      }
+  
       this.oscillator = this.audioContext.createOscillator();
       this.gainNode = this.audioContext.createGain();
-      
       this.oscillator.type = 'sine';
       this.oscillator.frequency.setValueAtTime(880, this.audioContext.currentTime); // A5 note
-      
-      // Configure gain (volume) envelope
-      this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-      this.gainNode.gain.linearRampToValueAtTime(0.5, this.audioContext.currentTime + 0.01);
-      this.gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.5);
-      
-      // Connect nodes
+  
+      // sound playing at a low volume
+      this.gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime);
+  
       this.oscillator.connect(this.gainNode);
       this.gainNode.connect(this.audioContext.destination);
-      
-      // Start and stop the oscillator
-      this.oscillator.start(this.audioContext.currentTime);
-      this.oscillator.stop(this.audioContext.currentTime + 0.5);
-      
-      // Cleanup after sound ends
-      setTimeout(() => {
-        this.cleanup();
-      }, 500);
+      this.oscillator.start();
 
     } catch (error) {
       console.error('Failed to play audio:', error);
@@ -62,8 +54,22 @@ export class TimerAudio {
   }
 
   stop(): void {
-    this.cleanup();
+    if (this.oscillator) {
+      try {
+        this.oscillator.stop();
+        this.oscillator.disconnect();
+      } catch (error) {
+        console.log(error);
+      }
+      this.oscillator = null;
+    }
+  
+    if (this.gainNode) {
+      this.gainNode.disconnect();
+      this.gainNode = null;
+    }
   }
+  
 
   private cleanup(): void {
     if (this.oscillator) {
