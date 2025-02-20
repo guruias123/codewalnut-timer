@@ -87,6 +87,7 @@ Your task is to improve and enhance an existing Timer App based on the following
 4. Run tests:  
    ```bash
    npm vitest
+   npm test
    ```
 
 ---
